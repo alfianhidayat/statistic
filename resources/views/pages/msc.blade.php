@@ -34,7 +34,7 @@
             <div class="col-md-3">
               <div class="form-group">
                 <label for="node">Node Name</label>
-                <select class="form-control select2" multiple name="node" id="node">
+                <select class="form-control select2" multiple name="nodeName" id="nodeName">
                   <option>Select Node Name</option>
                 </select>
               </div>
@@ -42,7 +42,7 @@
             <div class="col-md-3">
               <div class="form-group">
                 <label for="type">Type Name</label>
-                <select disabled class="form-control select2" multiple name="type" id="type">
+                <select class="form-control select2" multiple name="typeName" id="typeName">
 
                 </select>
               </div>
@@ -50,7 +50,7 @@
             <div class="col-md-3">
               <div class="form-group">
                 <label for="counter">Counter Type</label>
-                <select class="form-control" disabled name="counter" onchange="changeCounter(this.value)" id="counter">
+                <select class="form-control" name="counterType" onchange="changeCounter(this.value)" id="counterType">
                   <option>Select Counter Type</option>
                   <option value="node">Node Level</option>
                   <option value="blade">Blade Level</option>
@@ -72,7 +72,7 @@
             </div>
               <div class="col-md-3">
                 <div class="form-group">
-                  <button name="button" style="margin: 25px 0px 0" onclick="initChart()" class="btn btn-primary">
+                  <button name="button" style="margin: 25px 0px 0" onclick="generateChart()" class="btn btn-primary">
                     <i class="fa fa-gear"></i> Generate Statistics
                   </button>
                 </div>
@@ -100,6 +100,8 @@
 <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
 <script src="https://code.highcharts.com/stock/highstock.js"></script>
 <script src="https://code.highcharts.com/stock/modules/exporting.js"></script>
+<script src="{{ asset("/js/helpers.js") }}"></script>
+<script src="{{ asset("/js/stock-generator.js") }}"></script>
 
 <script>
 
@@ -158,18 +160,65 @@ function createChart() {
     });
 }
 
+function triggerType(){
+  $.get("/api/"+$("#kpi").val()+"/type_name", function(data){
+    var html = "";
+    for(i = 0; i < data.length; i++){
+      html += "<option value='"+data[i]+"'>"+data[i]+"</option>";
+      console.log(html);
+    }
+    $("#typeName").html(html);
+  })
+}
 
+currentKPI = {}
 function TrigerKPI(kpi){
+  currentKPI = {
+    "enabled" : ["counterType", "typeName", "valueType"],
+    "disabled" : ["bc"],
+    "chart": {type: "stock"}
+  };
   $.get("/api/"+kpi+"/node_name", function(data){
       var html = "";
       for(i = 0; i < data.length; i++){
         html += "<option value='"+data[i]+"'>"+data[i]+"</option>";
         console.log(html);
       }
-      $("#node").html(html);
+      $("#nodeName").html(html);
+  });
+  triggerDataType()
+  triggerType()
+}
+
+function triggerDataType(){
+  var data = [];
+  $.get("/api/"+$("#kpi").val()+"/value_type", function(o){
+    for(i = 0; i < o.data.length; i++){
+      data.push({"name": "valueType", "value": o.data[i]});
+    }
+    currentKPI.autoload = data;
   });
 }
 
+function generateChart(){
+      var kpi = $("#kpi").val();
+      var startDate = '2017-10-03 2010:00:00';
+      var endDate = '2017-10-04 2010:00:00';
+      // var valueType = names;
+      var dataArr = [];
+      dataArr.push($("#nodeName").serializeArray());
+      dataArr.push([{name:"startDate",value:startDate}])
+      dataArr.push([{name:"endDate",value:endDate}])
+      if(typeof currentKPI.autoload != "undefined")
+        dataArr.push(currentKPI.autoload);
+      $.map(currentKPI.enabled, function(v,i){
+        var _d = $("#"+v).serializeArray();
+        if(_d.length > 0) dataArr.push(_d);
+      });
+      urls = urlCombination(dataArr);
+      console.log(urls);
+      initStock("/api/"+kpi+"/", urls,'cart-container', "UMSC");
+}
 
 function initChart(){
         var dataArr = [];
@@ -212,6 +261,7 @@ function initChart(){
 <!-- <script src="js/bootstrap-datepicker.js"></script> -->
 <script src="{{ asset("/AdminLTE/bower_components/moment/min/moment.min.js") }}"></script>
 <script src="{{ asset("/AdminLTE/bower_components/bootstrap-daterangepicker/daterangepicker.js") }}"></script>
+<script src="{{ asset("/AdminLTE/bower_components/select2/dist/js/select2.full.min.js") }}"></script>
 
 <script>
 $(function () {

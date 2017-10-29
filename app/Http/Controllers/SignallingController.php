@@ -22,6 +22,7 @@ class SignallingController extends Controller
             // ->whereBetween('date_time', [date('Y-m-d H:i:s', strtotime($startDate)), date('Y-m-d H:i:s', strtotime($endDate))])
             // ->orderby("date_time")
             // ->get();
+            // return Signalling::all();
             $data = Signalling::all();
             // return $valueType;
             foreach($data as $dt){
